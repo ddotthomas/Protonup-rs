@@ -78,14 +78,10 @@ pub async fn list_releases(
 pub struct Download {
     /// Proton or Wine GE version, based off tag
     pub version: String,
-    /// URL to download the sha512sum for this Download
     pub sha512sum_url: String,
-    /// URL to download the Wine or Proton archive
     pub download_url: String,
-    /// Size of Wine or Proton archive in Bytes
     pub size: u64,
 }
-
 #[cfg(test)]
 mod tests {
     use crate::variants;

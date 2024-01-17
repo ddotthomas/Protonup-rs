@@ -63,7 +63,7 @@ async fn main() {
         download::run_quick_downloads().await
     } else {
         let answer: InitialMenu = Select::new(
-            "ProtonUp Menu: Chose your action:",
+            "ProtonUp Menu: Choose your action:",
             InitialMenu::VARIANTS.to_vec(),
         )
         .with_page_size(10)
@@ -73,25 +73,9 @@ async fn main() {
         // Set parameters based on users choice
         match answer {
             InitialMenu::QuickUpdate => download::run_quick_downloads().await,
-            InitialMenu::DownloadForSteam => {
-                download::download_to_selected_app(Some(App::Steam)).await
-            }
-
-            //     selected_app = Some(apps::App::Steam);
-            //     should_open_tag_selector = true;
-            // }
-            InitialMenu::DownloadForLutris => {
-                download::download_to_selected_app(Some(App::Lutris)).await
-            }
-            //     selected_app = Some(apps::App::Lutris);
-            //     should_open_tag_selector = true;
-            // }
-            InitialMenu::DownloadIntoCustomLocation => {
-                download::download_to_selected_app(None).await
-            }
-            //     should_open_dir_selector = true;
-            //     should_open_tag_selector = true;
-            // }
+            InitialMenu::DownloadForSteam => download::download_to_selected_app(Some(App::Steam)).await,
+            InitialMenu::DownloadForLutris => download::download_to_selected_app(Some(App::Lutris)).await,
+            InitialMenu::DownloadIntoCustomLocation => download::download_to_selected_app(None).await,
             InitialMenu::ManageExistingInstallations => manage_apps_routine(),
         }
     }
