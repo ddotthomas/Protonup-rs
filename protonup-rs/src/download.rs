@@ -181,7 +181,6 @@ pub async fn download_to_selected_app(app: Option<apps::App>) {
                 std::process::exit(0);
             }
 
-
             // Figure out which versions of the App the user has (Native/Flatpak)
             installed_apps if installed_apps.len() == 1 => {
                 println!(

@@ -14,8 +14,7 @@ use iced::{
 //use std::{cmp, path::PathBuf};
 
 #[derive(Debug)]
-pub struct App {
-}
+pub struct Gui {}
 
 #[derive(Debug, Clone)]
 pub enum Message {
@@ -23,18 +22,14 @@ pub enum Message {
     LauncherSelected,
 }
 
-impl Application for App {
+impl Application for Gui {
     type Message = Message;
     type Theme = Theme;
     type Executor = executor::Default;
     type Flags = ();
 
     fn new(_flags: ()) -> (Self, Command<Message>) {
-        (
-            Self {
-            },
-            Command::none(),
-        )
+        (Self {}, Command::none())
     }
 
     fn title(&self) -> String {
@@ -45,7 +40,7 @@ impl Application for App {
         match message {
             // TODO
             Message::QuickUpdate => {}
-            Message::LauncherSelected => {},
+            Message::LauncherSelected => {}
         };
 
         Command::none()
@@ -56,19 +51,20 @@ impl Application for App {
     }
 
     fn view(&self) -> Element<Message> {
-        let controls: Element<Message> = Element::from(
-            column(vec![button("TODO: Quick Update")
-                .on_press(Message::QuickUpdate)
-                .into()])
-            .width(Length::FillPortion(1))
-            .padding(5),
-        );
+        let controls: Element<Message> = column(vec![button("TODO: Quick Update")
+            .on_press(Message::QuickUpdate)
+            .into()])
+        .width(Length::FillPortion(1))
+        .padding(5)
+        .into();
 
         // TODO: will have a function to check the currently selected launcher based on the dropdown for already installed versions adding them to the list to be viewed
         let list = Element::from(
-            column(
-                vec![text("TODO: Under Construction - List of Downloaded Proton/Wine versions").into(), text("Version 1.1").into(), text("Version 1.2").into(),]
-            )
+            column(vec![
+                text("TODO: Under Construction - List of Downloaded Proton/Wine versions").into(),
+                text("Version 1.1").into(),
+                text("Version 1.2").into(),
+            ])
             .width(Length::FillPortion(4))
             .padding(5),
         );

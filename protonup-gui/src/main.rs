@@ -1,11 +1,11 @@
 use iced::{window, Application, Settings};
 
-mod app;
+mod gui;
 mod utility;
-use app::App;
+use gui::Gui;
 
 pub fn main() -> iced::Result {
-    App::run(Settings {
+    Gui::run(Settings {
         window: window::Settings {
             size: (800, 450),
             ..window::Settings::default()

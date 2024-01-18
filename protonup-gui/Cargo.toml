@@ -7,9 +7,8 @@ repository = "https://github.com/auyer/protonup-rs"
 license = "Apache-2.0"
 
 [dependencies]
-iced = { version = "0.7", features = ["tokio"] }
-iced_native = { version = "0.8" }
-iced_futures = { version = "0.5", features = ["tokio"] }
+iced = { version = "0.10.0", features = ["tokio"] }
+iced_native = { version = "0.10.3" }
 libprotonup = { path = "../libprotonup" }
 
 [dependencies.reqwest]
