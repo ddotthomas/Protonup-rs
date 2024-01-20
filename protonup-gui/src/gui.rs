@@ -1,5 +1,5 @@
 use iced::executor;
-use iced::widget::{button, column, container, pick_list, progress_bar, row, text, Column};
+use iced::widget::{button, column, container, pick_list, row, text};
 use iced::{
     Application,
     Command,
@@ -10,16 +10,22 @@ use iced::{
     // Background,
     // Color,
 };
+use libprotonup::apps;
+
+use crate::utility;
 
 //use std::{cmp, path::PathBuf};
 
 #[derive(Debug)]
-pub struct Gui {}
+pub struct Gui {
+    selected_launcher: utility::AppInstallWrapper,
+    launchers: Vec<utility::AppInstallWrapper>,
+}
 
 #[derive(Debug, Clone)]
 pub enum Message {
     QuickUpdate,
-    LauncherSelected,
+    LauncherSelected(utility::AppInstallWrapper),
 }
 
 impl Application for Gui {
@@ -29,7 +35,19 @@ impl Application for Gui {
     type Flags = ();
 
     fn new(_flags: ()) -> (Self, Command<Message>) {
-        (Self {}, Command::none())
+        let installed_apps = utility::list_installed_apps();
+        (
+            Self {
+                selected_launcher: if installed_apps.len() > 0 {
+                    installed_apps[0].clone()
+                } else {
+                    // If no installed apps were found, default to Steam
+                    apps::AppInstallations::Steam.into()
+                },
+                launchers: installed_apps,
+            },
+            Command::none(),
+        )
     }
 
     fn title(&self) -> String {
@@ -40,7 +58,9 @@ impl Application for Gui {
         match message {
             // TODO
             Message::QuickUpdate => {}
-            Message::LauncherSelected => {}
+            Message::LauncherSelected(app) => {
+                self.selected_launcher = app;
+            }
         };
 
         Command::none()
@@ -58,7 +78,6 @@ impl Application for Gui {
         .padding(5)
         .into();
 
-        // TODO: will have a function to check the currently selected launcher based on the dropdown for already installed versions adding them to the list to be viewed
         let list = Element::from(
             column(vec![
                 text("TODO: Under Construction - List of Downloaded Proton/Wine versions").into(),
@@ -69,42 +88,30 @@ impl Application for Gui {
             .padding(5),
         );
 
-        // let content = column(vec![
-        //     container(
-        //         pick_list(
-        //             self.launchers.clone(),
-        //             self.selected_launcher.clone(),
-        //             Message::LauncherSelected,
-        //         )
-        //         .width(Length::Fill),
-        //     )
-        //     .height(Length::Units(40))
-        //     .width(Length::Fill)
-        //     // Will figure out how to fix later
-        //     // .style(container::Style {
-        //     //     background: Some(iced::Background::Color(iced::Color {
-        //     //         r: 10.0,
-        //     //         g: 11.0,
-        //     //         b: 32.0,
-        //     //         a: 0.0,
-        //     //     })),
-        //     //     ..Default::default()
-        //     // })
-        //     .into(),
-        //     container(row(vec![controls, list]))
-        //         .height(Length::Fill)
-        //         .into(),
-        // ]);
+        let content = column(vec![
+            container(
+                pick_list(
+                    self.launchers.clone(),
+                    Some(self.selected_launcher.clone()),
+                    Message::LauncherSelected,
+                )
+                .width(Length::Fill),
+            )
+            .height(Length::Fixed(40.))
+            .width(Length::Fill)
+            .into(),
+            container(row(vec![controls, list]))
+                .height(Length::Fill)
+                .into(),
+        ]);
 
-        // container(content)
-        //     .width(Length::Fill)
-        //     .height(Length::Fill)
-        //     .center_x()
-        //     .center_y()
-        //     .padding(10)
-        //     .into()
-
-        list
+        container(content)
+            .width(Length::Fill)
+            .height(Length::Fill)
+            .center_x()
+            .center_y()
+            .padding(10)
+            .into()
     }
 
     fn theme(&self) -> Theme {
