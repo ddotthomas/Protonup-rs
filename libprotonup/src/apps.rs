@@ -1,6 +1,6 @@
 use crate::{
     files::{self, list_folders_in_path},
-    variants::Variant,
+    variants::{Variant, VariantGithubParameters},
 };
 use std::fmt;
 
@@ -99,6 +99,11 @@ impl AppInstallations {
             Self::Steam | Self::SteamFlatpak => App::Steam,
             Self::Lutris | Self::LutrisFlatpak => App::Lutris,
         }
+    }
+
+    /// Returns the default VariantGithubParameters for the AppInstallation
+    pub fn get_github_parameters(&self) -> VariantGithubParameters {
+        self.into_app().app_wine_version().get_github_parameters()
     }
 }
 

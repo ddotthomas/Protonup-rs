@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 
 pub type ReleaseList = Vec<Release>;
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct Release {
     /// API URL of the Release
     url: Option<String>,
@@ -41,7 +41,7 @@ impl Release {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct Asset {
     /// API URL of the Asset
     url: String,
@@ -57,9 +57,7 @@ pub struct Asset {
 }
 
 /// Returns a Vec of Releases from a GitHub repository, the URL used for the request is built from the passed in VariantParameters
-pub async fn list_releases(
-    source: &VariantGithubParameters,
-) -> Result<ReleaseList, reqwest::Error> {
+pub async fn list_releases(source: VariantGithubParameters) -> Result<ReleaseList, reqwest::Error> {
     let agent = format!("{}/v{}", constants::USER_AGENT, constants::VERSION,);
 
     let url = format!(
@@ -90,7 +88,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_list_releases() {
-        let conditions = &[
+        let conditions = [
             (
                 variants::Variant::WineGE.get_github_parameters(),
                 "List WineGE",

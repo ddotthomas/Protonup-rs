@@ -133,7 +133,7 @@ pub async fn run_quick_downloads() {
         );
 
         // Get the latest Download info for the wine_version
-        let download = match github::list_releases(&wine_version.get_github_parameters()).await {
+        let download = match github::list_releases(wine_version.get_github_parameters()).await {
             // Get the Download info from the first item on the list, the latest version
             Ok(release_list) => release_list[0].get_download_info(),
             Err(e) => {
@@ -218,7 +218,7 @@ pub async fn download_to_selected_app(app: Option<apps::App>) {
             .unwrap_or_else(|_| std::process::exit(0)),
     };
 
-    let release_list = match github::list_releases(&wine_version.get_github_parameters()).await {
+    let release_list = match github::list_releases(wine_version.get_github_parameters()).await {
         Ok(data) => data,
         Err(e) => {
             eprintln!("Failed to fetch Github data, make sure you're connected to the internet.\nError: {}", e);

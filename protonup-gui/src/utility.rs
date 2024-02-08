@@ -4,10 +4,10 @@ use std::fmt::Display;
 use libprotonup::apps::AppInstallations;
 
 /// Wrapper around libprotonup::apps::AppInstallations
-/// to modify the Display implementation
+/// to modify the Display implementation, and track the release list per install
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct AppInstallWrapper {
-    app_install: AppInstallations,
+    pub app_install: AppInstallations,
 }
 
 impl Display for AppInstallWrapper {

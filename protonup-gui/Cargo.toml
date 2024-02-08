@@ -10,6 +10,7 @@ license = "Apache-2.0"
 iced = { version = "0.10.0", features = ["tokio"] }
 iced_native = { version = "0.10.3" }
 libprotonup = { path = "../libprotonup" }
+tokio = { version = "1.36.0", features = ["full"] }
 
 [dependencies.reqwest]
 version = "0.11"

@@ -1,5 +1,5 @@
 use iced::executor;
-use iced::widget::{button, column, container, pick_list, row, text};
+use iced::widget::{button, column, container, pick_list, progress_bar, row, text};
 use iced::{
     Application,
     Command,
@@ -11,8 +11,9 @@ use iced::{
     // Color,
 };
 use libprotonup::apps;
+mod helpers;
 
-use crate::utility;
+use crate::{download, utility};
 
 //use std::{cmp, path::PathBuf};
 
@@ -20,12 +21,14 @@ use crate::utility;
 pub struct Gui {
     selected_launcher: utility::AppInstallWrapper,
     launchers: Vec<utility::AppInstallWrapper>,
+    release_data: Option<download::LauncherReleases>,
 }
 
 #[derive(Debug, Clone)]
 pub enum Message {
     QuickUpdate,
     LauncherSelected(utility::AppInstallWrapper),
+    AddReleases(Result<Vec<download::LauncherReleases>, ()>),
 }
 
 impl Application for Gui {
@@ -44,9 +47,13 @@ impl Application for Gui {
                     // If no installed apps were found, default to Steam
                     apps::AppInstallations::Steam.into()
                 },
-                launchers: installed_apps,
+                launchers: installed_apps.clone(),
+                release_data: None,
             },
-            Command::none(),
+            Command::perform(
+                download::get_launcher_releases(installed_apps),
+                Message::AddReleases,
+            ),
         )
     }
 
@@ -61,6 +68,9 @@ impl Application for Gui {
             Message::LauncherSelected(app) => {
                 self.selected_launcher = app;
             }
+            Message::AddReleases(releases) => {
+                //TODO
+            }
         };
 
         Command::none()
@@ -73,6 +83,7 @@ impl Application for Gui {
     fn view(&self) -> Element<Message> {
         let controls: Element<Message> = column(vec![button("TODO: Quick Update")
             .on_press(Message::QuickUpdate)
+            .width(Length::Fill)
             .into()])
         .width(Length::FillPortion(1))
         .padding(5)
@@ -84,7 +95,7 @@ impl Application for Gui {
                 text("Version 1.1").into(),
                 text("Version 1.2").into(),
             ])
-            .width(Length::FillPortion(4))
+            .width(Length::FillPortion(3))
             .padding(5),
         );
 
