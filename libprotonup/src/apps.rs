@@ -50,7 +50,7 @@ impl App {
     }
 }
 
-#[derive(Debug, PartialEq, Eq, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone, Hash)]
 pub enum AppInstallations {
     Steam,
     SteamFlatpak,

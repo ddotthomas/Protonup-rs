@@ -5,7 +5,7 @@ use libprotonup::apps::AppInstallations;
 
 /// Wrapper around libprotonup::apps::AppInstallations
 /// to modify the Display implementation, and track the release list per install
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct AppInstallWrapper {
     pub app_install: AppInstallations,
 }

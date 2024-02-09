@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use iced::executor;
 use iced::widget::{button, column, container, pick_list, progress_bar, row, text};
 use iced::{
@@ -10,7 +12,7 @@ use iced::{
     // Background,
     // Color,
 };
-use libprotonup::apps;
+use libprotonup::{apps, github};
 mod helpers;
 
 use crate::{download, utility};
@@ -21,14 +23,14 @@ use crate::{download, utility};
 pub struct Gui {
     selected_launcher: utility::AppInstallWrapper,
     launchers: Vec<utility::AppInstallWrapper>,
-    release_data: Option<download::LauncherReleases>,
+    release_data: Option<Vec<download::LauncherReleases>>,
 }
 
 #[derive(Debug, Clone)]
 pub enum Message {
     QuickUpdate,
     LauncherSelected(utility::AppInstallWrapper),
-    AddReleases(Result<Vec<download::LauncherReleases>, ()>),
+    AddReleases(Result<HashMap<utility::AppInstallWrapper, Vec<github::Release>>, ()>),
 }
 
 impl Application for Gui {
@@ -69,7 +71,15 @@ impl Application for Gui {
                 self.selected_launcher = app;
             }
             Message::AddReleases(releases) => {
-                //TODO
+                match releases {
+                    Ok(releases) => {
+                        self.release_data = Some(releases);
+                    },
+                    Err(()) => {
+
+                    }
+
+                }
             }
         };
 
