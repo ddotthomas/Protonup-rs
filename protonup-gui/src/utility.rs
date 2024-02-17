@@ -1,11 +1,11 @@
 use core::fmt;
-use std::fmt::Display;
+use std::{fmt::Display, ops::Deref};
 
-use libprotonup::apps::AppInstallations;
+use libprotonup::{apps::AppInstallations, github};
 
 /// Wrapper around libprotonup::apps::AppInstallations
 /// to modify the Display implementation, and track the release list per install
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 pub struct AppInstallWrapper {
     pub app_install: AppInstallations,
 }
@@ -48,5 +48,45 @@ pub fn list_installed_apps() -> Vec<AppInstallWrapper> {
 impl From<AppInstallations> for AppInstallWrapper {
     fn from(app_install: AppInstallations) -> Self {
         Self { app_install }
+    }
+}
+
+impl Deref for AppInstallWrapper {
+    type Target = AppInstallations;
+
+    fn deref(&self) -> &Self::Target {
+        &self.app_install
+    }
+}
+
+#[derive(Debug, Clone)]
+/// Wrapper around the Wine/Proton GitHub data
+///
+/// Allows the GUI to keep track of which versions are selected for download.
+pub struct ReleaseWrapper {
+    release: github::Release,
+    pub selected: bool,
+}
+
+impl From<github::Release> for ReleaseWrapper {
+    fn from(release: github::Release) -> Self {
+        Self {
+            release,
+            selected: false,
+        }
+    }
+}
+
+impl Deref for ReleaseWrapper {
+    type Target = github::Release;
+
+    fn deref(&self) -> &Self::Target {
+        &self.release
+    }
+}
+
+impl PartialEq for ReleaseWrapper {
+    fn eq(&self, other: &Self) -> bool {
+        self.release == other.release
     }
 }

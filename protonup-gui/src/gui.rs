@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use iced::executor;
-use iced::widget::{button, column, container, pick_list, progress_bar, row, text};
+use iced::widget::{button, column, container, pick_list, row};
 use iced::{
     Application,
     Command,
@@ -12,7 +12,7 @@ use iced::{
     // Background,
     // Color,
 };
-use libprotonup::{apps, github};
+use libprotonup::apps;
 mod helpers;
 
 use crate::{download, utility};
@@ -23,26 +23,33 @@ use crate::{download, utility};
 pub struct Gui {
     selected_launcher: utility::AppInstallWrapper,
     launchers: Vec<utility::AppInstallWrapper>,
-    release_data: Option<Vec<download::LauncherReleases>>,
+    release_data: Option<HashMap<utility::AppInstallWrapper, Vec<utility::ReleaseWrapper>>>,
 }
 
 #[derive(Debug, Clone)]
 pub enum Message {
     QuickUpdate,
     LauncherSelected(utility::AppInstallWrapper),
-    AddReleases(Result<HashMap<utility::AppInstallWrapper, Vec<github::Release>>, ()>),
+    AddReleases(Result<HashMap<utility::AppInstallWrapper, Vec<utility::ReleaseWrapper>>, ()>),
+    /// Toggle the release being downloaded or not
+    SelectVersion(utility::AppInstallWrapper, utility::ReleaseWrapper, bool),
 }
 
 impl Application for Gui {
     type Message = Message;
     type Theme = Theme;
+    // Using the tokio async executor
     type Executor = executor::Default;
     type Flags = ();
 
+    /// Sets up the Gui and its needed variables
     fn new(_flags: ()) -> (Self, Command<Message>) {
+        // Find the currently installed apps to show in the GUI dropdown
         let installed_apps = utility::list_installed_apps();
         (
             Self {
+                // If there were any apps found, 
+                // use the first one as the currently selected
                 selected_launcher: if installed_apps.len() > 0 {
                     installed_apps[0].clone()
                 } else {
@@ -66,19 +73,23 @@ impl Application for Gui {
     fn update(&mut self, message: Message) -> Command<Message> {
         match message {
             // TODO
-            Message::QuickUpdate => {}
+            Message::QuickUpdate => { },
             Message::LauncherSelected(app) => {
                 self.selected_launcher = app;
             }
-            Message::AddReleases(releases) => {
-                match releases {
-                    Ok(releases) => {
-                        self.release_data = Some(releases);
-                    },
-                    Err(()) => {
-
+            Message::AddReleases(releases) => match releases {
+                Ok(releases) => {
+                    self.release_data = Some(releases);
+                }
+                Err(()) => { /* TODO display an Error message of some kind in the GUI */ }
+            },
+            Message::SelectVersion(app, release, selection) => {
+                if let Some(release_map) = &mut self.release_data {
+                    if let Some(releases) = release_map.get_mut(&app) {
+                        if let Some(rel) = releases.iter_mut().find(|rel| **rel == release) {
+                            rel.selected = selection;
+                        }
                     }
-
                 }
             }
         };
@@ -100,13 +111,9 @@ impl Application for Gui {
         .into();
 
         let list = Element::from(
-            column(vec![
-                text("TODO: Under Construction - List of Downloaded Proton/Wine versions").into(),
-                text("Version 1.1").into(),
-                text("Version 1.2").into(),
-            ])
-            .width(Length::FillPortion(3))
-            .padding(5),
+            column(helpers::download_list(&self))
+                .width(Length::FillPortion(3))
+                .padding(5),
         );
 
         let content = column(vec![

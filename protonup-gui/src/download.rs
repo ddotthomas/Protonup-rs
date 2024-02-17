@@ -1,14 +1,13 @@
 use std::collections::HashMap;
 
-use libprotonup::{apps::App, github};
+use libprotonup::github;
 
-
-use crate::utility::AppInstallWrapper;
+use crate::utility::{AppInstallWrapper, ReleaseWrapper};
 
 pub async fn get_launcher_releases(
     launchers: Vec<AppInstallWrapper>,
-) -> Result<HashMap<AppInstallWrapper, Vec<github::Release>>, ()> {
-    let mut release_map: HashMap<AppInstallWrapper, Vec<github::Release>> = HashMap::new();
+) -> Result<HashMap<AppInstallWrapper, Vec<ReleaseWrapper>>, ()> {
+    let mut release_map: HashMap<AppInstallWrapper, Vec<ReleaseWrapper>> = HashMap::new();
 
     let mut future_set = tokio::task::JoinSet::new();
 
@@ -34,10 +33,16 @@ pub async fn get_launcher_releases(
     Ok(release_map)
 }
 
-async fn return_releases(launcher: AppInstallWrapper) -> Result<(AppInstallWrapper, Vec<github::Release>), ()> {
-    let releases = if let Ok(releases) = github::list_releases(
-        launcher.app_install.get_github_parameters()
-    ).await { releases } else { return Err(()) };
+async fn return_releases(
+    launcher: AppInstallWrapper,
+) -> Result<(AppInstallWrapper, Vec<ReleaseWrapper>), ()> {
+    let releases = if let Ok(releases) =
+        github::list_releases(launcher.app_install.get_github_parameters()).await
+    {
+        releases.into_iter().map(|release| release.into()).collect()
+    } else {
+        return Err(());
+    };
 
     Ok((launcher, releases))
 }
