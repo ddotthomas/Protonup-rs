@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
-use iced::executor;
 use iced::widget::{button, column, container, pick_list, row};
+use iced::executor;
 use iced::{
     Application,
     Command,
@@ -15,6 +15,7 @@ use iced::{
 use libprotonup::apps;
 mod helpers;
 
+use crate::download::DownloadInfo;
 use crate::{download, utility};
 
 //use std::{cmp, path::PathBuf};
@@ -33,6 +34,8 @@ pub enum Message {
     AddReleases(Result<HashMap<utility::AppInstallWrapper, Vec<utility::ReleaseWrapper>>, ()>),
     /// Toggle the release being downloaded or not
     SelectVersion(utility::AppInstallWrapper, utility::ReleaseWrapper, bool),
+    /// Wrapper around any messages or events from the download thread/subscription
+    DownloadInfo(download::DownloadInfo),
 }
 
 impl Application for Gui {
@@ -48,7 +51,7 @@ impl Application for Gui {
         let installed_apps = utility::list_installed_apps();
         (
             Self {
-                // If there were any apps found, 
+                // If there were any apps found,
                 // use the first one as the currently selected
                 selected_launcher: if installed_apps.len() > 0 {
                     installed_apps[0].clone()
@@ -73,7 +76,7 @@ impl Application for Gui {
     fn update(&mut self, message: Message) -> Command<Message> {
         match message {
             // TODO
-            Message::QuickUpdate => { },
+            Message::QuickUpdate => { /* TODO command::channel(size, f) */ }
             Message::LauncherSelected(app) => {
                 self.selected_launcher = app;
             }
@@ -92,13 +95,16 @@ impl Application for Gui {
                     }
                 }
             }
+            Message::DownloadInfo(info) => match info {
+                DownloadInfo::Connected(h_tx) => { /* TODO set up the download thread transmitter */}
+            },
         };
 
         Command::none()
     }
 
     fn subscription(&self) -> Subscription<Message> {
-        Subscription::none()
+        download::handle_downloads().map(Message::DownloadInfo)
     }
 
     fn view(&self) -> Element<Message> {
