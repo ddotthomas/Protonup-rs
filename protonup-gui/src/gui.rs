@@ -1,7 +1,8 @@
 use std::collections::HashMap;
 
-use iced::widget::{button, column, container, pick_list, row};
 use iced::executor;
+use iced::futures::channel::mpsc::Sender;
+use iced::widget::{button, column, container, pick_list, row, scrollable};
 use iced::{
     Application,
     Command,
@@ -15,7 +16,7 @@ use iced::{
 use libprotonup::apps;
 mod helpers;
 
-use crate::download::DownloadInfo;
+use crate::download::{DownloadThreadMessage, HandlerMessage};
 use crate::{download, utility};
 
 //use std::{cmp, path::PathBuf};
@@ -25,6 +26,7 @@ pub struct Gui {
     selected_launcher: utility::AppInstallWrapper,
     launchers: Vec<utility::AppInstallWrapper>,
     release_data: Option<HashMap<utility::AppInstallWrapper, Vec<utility::ReleaseWrapper>>>,
+    download_handler_tx: Option<Sender<HandlerMessage>>,
 }
 
 #[derive(Debug, Clone)]
@@ -35,7 +37,7 @@ pub enum Message {
     /// Toggle the release being downloaded or not
     SelectVersion(utility::AppInstallWrapper, utility::ReleaseWrapper, bool),
     /// Wrapper around any messages or events from the download thread/subscription
-    DownloadInfo(download::DownloadInfo),
+    DownloadInfo(download::DownloadThreadMessage),
 }
 
 impl Application for Gui {
@@ -61,6 +63,7 @@ impl Application for Gui {
                 },
                 launchers: installed_apps.clone(),
                 release_data: None,
+                download_handler_tx: None,
             },
             Command::perform(
                 download::get_launcher_releases(installed_apps),
@@ -76,7 +79,13 @@ impl Application for Gui {
     fn update(&mut self, message: Message) -> Command<Message> {
         match message {
             // TODO
-            Message::QuickUpdate => { /* TODO command::channel(size, f) */ }
+            Message::QuickUpdate => {
+                download::quick_update(
+                    &self.selected_launcher,
+                    &self.release_data,
+                    &mut self.download_handler_tx,
+                );
+            }
             Message::LauncherSelected(app) => {
                 self.selected_launcher = app;
             }
@@ -96,7 +105,9 @@ impl Application for Gui {
                 }
             }
             Message::DownloadInfo(info) => match info {
-                DownloadInfo::Connected(h_tx) => { /* TODO set up the download thread transmitter */}
+                DownloadThreadMessage::Ready(h_tx) => {
+                    self.download_handler_tx = Some(h_tx);
+                }
             },
         };
 
@@ -116,11 +127,10 @@ impl Application for Gui {
         .padding(5)
         .into();
 
-        let list = Element::from(
+        let list = Element::from(scrollable(
             column(helpers::download_list(&self))
-                .width(Length::FillPortion(3))
                 .padding(5),
-        );
+        ).width(Length::FillPortion(3)));
 
         let content = column(vec![
             container(

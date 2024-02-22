@@ -7,10 +7,7 @@ use iced::{
 };
 use libprotonup::github;
 
-use crate::{
-    gui::Message,
-    utility::{AppInstallWrapper, ReleaseWrapper},
-};
+use crate::utility::{self, AppInstallWrapper, ReleaseWrapper};
 
 pub async fn get_launcher_releases(
     launchers: Vec<AppInstallWrapper>,
@@ -61,7 +58,7 @@ enum State {
     Ready(mpsc::Receiver<HandlerMessage>),
 }
 
-pub fn handle_downloads() -> Subscription<DownloadInfo> {
+pub fn handle_downloads() -> Subscription<DownloadThreadMessage> {
     struct Handler;
 
     subscription::channel(
@@ -76,10 +73,10 @@ pub fn handle_downloads() -> Subscription<DownloadInfo> {
                     // When the app is starting, set up the mpsc tx and rx channels
                     State::Starting => {
                         // Create the mpsc channels to communicate to the subscription
-                        let (mut h_tx, h_rx) = mpsc::channel(100);
+                        let (h_tx, h_rx) = mpsc::channel(100);
 
                         // Send the transmitter channel to the main/gui
-                        let _ = output.try_send(DownloadInfo::Connected(h_tx));
+                        let _ = output.try_send(DownloadThreadMessage::Ready(h_tx));
 
                         // Set the subsciption state to ready with the reciever
                         state = State::Ready(h_rx);
@@ -88,7 +85,10 @@ pub fn handle_downloads() -> Subscription<DownloadInfo> {
                     State::Ready(h_rx) => {
                         // Check if there's any messages from the gui and handle them
                         match h_rx.select_next_some().await {
-                            HandlerMessage::Download(data) => { /* TODO */ }
+                            HandlerMessage::Download(download_info) => { 
+                                // Read the sent download info and start the requested downloads
+                                
+                            }
                         }
                     }
                 }
@@ -98,11 +98,42 @@ pub fn handle_downloads() -> Subscription<DownloadInfo> {
 }
 
 #[derive(Debug, Clone)]
-/// Download info context switch, handled by the gui::Message::DownloadInfo
-pub enum DownloadInfo {
-    Connected(mpsc::Sender<HandlerMessage>),
+/// Download thread info organizer, handled by the gui::Message::DownloadInfo
+pub enum DownloadThreadMessage {
+    Ready(mpsc::Sender<HandlerMessage>),
 }
 
+/// Messages to send to the download thread
 pub enum HandlerMessage {
-    Download(/* TODO DownloadData */ ()),
+    Download(DownloadInfo),
+}
+
+/// All the information needed by the download thread to start the download(s)
+pub struct DownloadInfo {
+    selected_app: AppInstallWrapper,
+    requested_downloads: Vec<github::Download>,
+}
+
+/// Quick download the currently selected app's most recent wine version
+pub fn quick_update(
+    selected_app: &AppInstallWrapper,
+    release_data: &Option<HashMap<utility::AppInstallWrapper, Vec<utility::ReleaseWrapper>>>,
+    download_handler_tx: &mut Option<mpsc::Sender<HandlerMessage>>,
+) {
+    // Check that the download handler and release data are ready
+    if let Some(h_tx) = download_handler_tx {
+        if let Some(release_map) = release_data {
+            // Get the GitHub download list for the currently selected app
+            if let Some(release_list) = release_map.get(selected_app) {
+                // Grab the download info for the most recent version
+                // Send that in the Sender channel to the download handler thread
+                let download_data = release_list[0].get_download_info();
+
+                let _ = h_tx.try_send(HandlerMessage::Download(DownloadInfo {
+                    selected_app: *selected_app,
+                    requested_downloads: vec![download_data],
+                }));
+            }
+        }
+    }
 }
