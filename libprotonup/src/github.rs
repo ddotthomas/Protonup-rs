@@ -1,11 +1,12 @@
 use crate::constants;
-use crate::variants::VariantGithubParameters;
+use crate::variants::{Variant, VariantGithubParameters};
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 
 pub type ReleaseList = Vec<Release>;
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
+/// Contains the information from one of the releases on GitHub
+#[derive(Serialize, Deserialize, Debug)]
 pub struct Release {
     /// API URL of the Release
     url: Option<String>,
@@ -26,13 +27,19 @@ impl std::fmt::Display for Release {
 impl Release {
     /// Returns a Download struct corresponding to the Release
     pub fn get_download_info(&self) -> Download {
-        let mut download: Download = Download::default();
-        download.version = self.tag_name.clone();
+        let mut download: Download = Download {
+            version: self.tag_name.clone(),
+            ..Download::default()
+        };
         for asset in &self.assets {
             if asset.name.ends_with("sha512sum") {
-                download.sha512sum_url = asset.browser_download_url.clone();
+                download
+                    .sha512sum_url
+                    .clone_from(&asset.browser_download_url);
             } else if asset.name.ends_with("tar.gz") || asset.name.ends_with("tar.xz") {
-                download.download_url = asset.browser_download_url.clone();
+                download
+                    .download_url
+                    .clone_from(&asset.browser_download_url);
                 download.size = asset.size as u64;
             }
         }
@@ -41,7 +48,10 @@ impl Release {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
+/// Holds the information from the different Assets for each GitHub release
+///
+/// An Asset could be for the wine tar folder or for the sha512sum
+#[derive(Serialize, Deserialize, Debug)]
 pub struct Asset {
     /// API URL of the Asset
     url: String,
@@ -72,14 +82,36 @@ pub async fn list_releases(source: VariantGithubParameters) -> Result<ReleaseLis
     Ok(r_list)
 }
 
+/// Contains all the information needed to download the corresponding release from GitHub
 #[derive(Default, Debug, PartialEq, Clone)]
 pub struct Download {
     /// Proton or Wine GE version, based off tag
     pub version: String,
+    /// Download URL for the release's file hash to check download integrity
     pub sha512sum_url: String,
+    /// Download URL for the release's compressed tar file
     pub download_url: String,
+    /// The reported size of the tar download
     pub size: u64,
 }
+
+impl Download {
+    pub fn output_dir(&self, variant: &Variant) -> &str {
+        match variant {
+            Variant::GEProton => &self.version,
+            Variant::WineGE => {
+                self.download_url
+                    .rsplit_once("/wine-")
+                    .unwrap()
+                    .1
+                    .rsplit_once(".tar.xz")
+                    .unwrap()
+                    .0
+            }
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use crate::variants;

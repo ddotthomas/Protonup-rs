@@ -1,8 +1,11 @@
 use super::constants::*;
 use std::{fmt, str::FromStr};
 
-/// Struct used to build GitHub api request URLs.
-/// Contains the GitHub URL, username for GE, the repository name for either Wine GE or Proton GE, and a Variant Enum for identifying the parameters type
+/// Struct used to build GitHub API request URLs.
+///
+/// Contains the GitHub URL, the username for GE,
+/// the repository name for either Wine GE or Proton GE,
+/// and a Variant Enum for identifying the parameters type
 pub struct VariantGithubParameters {
     /// this is a link back to the enum variant
     variant_ref: Variant,
@@ -30,21 +33,21 @@ impl VariantGithubParameters {
         }
     }
 
-    /// Returns the VariantParameters' Variant enum
+    /// Get Variant
     pub fn variant_type(&self) -> &Variant {
         &self.variant_ref
     }
 }
 
 /// Variant is an enum with all supported "Proton" versions
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub enum Variant {
     GEProton,
     WineGE,
 }
 
 impl fmt::Display for Variant {
-    /// returns a string representation of this variant
+    /// Returns a string representation of this Variant
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             Variant::GEProton => write!(f, "GEProton"),
@@ -66,7 +69,7 @@ impl FromStr for Variant {
 }
 
 impl Variant {
-    /// returns the application target for the Variant. Steam and Lutris are the current options
+    /// Returns the application target for the Variant. Steam and Lutris are the current options
     pub fn intended_application(&self) -> &str {
         match self {
             Variant::GEProton => "Steam",
@@ -93,5 +96,5 @@ impl Variant {
     }
 }
 
-// ALL_VARIANTS is a shorthand to all app variants
+/// ALL_VARIANTS is a shorthand to all app variants
 pub static ALL_VARIANTS: &[Variant] = &[Variant::GEProton, Variant::WineGE];

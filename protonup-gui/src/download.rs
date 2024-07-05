@@ -1,11 +1,15 @@
 use std::collections::HashMap;
+use std::sync::{
+    atomic::{AtomicBool, AtomicUsize},
+    Arc,
+};
 
 use futures::StreamExt;
 use iced::{
     futures::channel::mpsc,
     subscription::{self, Subscription},
 };
-use libprotonup::github;
+use libprotonup::{files, github};
 
 use crate::utility::{self, AppInstallWrapper, ReleaseWrapper};
 
@@ -22,7 +26,7 @@ pub async fn get_launcher_releases(
 
     while let Some(res) = future_set.join_next().await {
         // So many results to deal with
-        let release = if let Ok(res) = res {
+        let (launcher, releases) = if let Ok(res) = res {
             if let Ok(release) = res {
                 release
             } else {
@@ -32,7 +36,7 @@ pub async fn get_launcher_releases(
             return Err(());
         };
 
-        release_map.insert(release.0, release.1);
+        release_map.insert(launcher, releases);
     }
 
     Ok(release_map)
@@ -85,11 +89,43 @@ pub fn handle_downloads() -> Subscription<DownloadThreadMessage> {
                     State::Ready(h_rx) => {
                         // Check if there's any messages from the gui and handle them
                         match h_rx.select_next_some().await {
-                            HandlerMessage::Download(download_info) => { 
-                                // Read the sent download info and start the requested downloads
-                                
+                            HandlerMessage::Download(download_info) => {
+                                for (id, download) in download_info.requested_downloads {
+                                    // Create the progress trackers for the GUI progress bar and download function
+                                    let (progress, download_done) =
+                                        files::create_progress_trackers();
+                                    let _ = output.try_send(DownloadThreadMessage::Trackers(
+                                        id,
+                                        (progress.clone(), download_done.clone()),
+                                    ));
+
+                                    let install_path = std::path::Path::new(
+                                        download_info
+                                            .selected_app
+                                            .app_install
+                                            .default_install_dir(),
+                                    );
+
+                                    // Read the sent download info and start the requested downloads
+                                    match files::download_file_progress(
+                                        download.download_url,
+                                        download.size,
+                                        install_path,
+                                        progress,
+                                        download_done,
+                                    )
+                                    .await
+                                    {
+                                        Ok(_) => {
+                                            todo!()
+                                        }
+                                        Err(_) => {
+                                            todo!()
+                                        }
+                                    }
+                                }
                             }
-                        }
+                        };
                     }
                 }
             }
@@ -101,6 +137,7 @@ pub fn handle_downloads() -> Subscription<DownloadThreadMessage> {
 /// Download thread info organizer, handled by the gui::Message::DownloadInfo
 pub enum DownloadThreadMessage {
     Ready(mpsc::Sender<HandlerMessage>),
+    Trackers(usize, (Arc<AtomicUsize>, Arc<AtomicBool>)),
 }
 
 /// Messages to send to the download thread
@@ -111,7 +148,7 @@ pub enum HandlerMessage {
 /// All the information needed by the download thread to start the download(s)
 pub struct DownloadInfo {
     selected_app: AppInstallWrapper,
-    requested_downloads: Vec<github::Download>,
+    requested_downloads: Vec<(usize, github::Download)>,
 }
 
 /// Quick download the currently selected app's most recent wine version
@@ -126,13 +163,13 @@ pub fn quick_update(
             // Get the GitHub download list for the currently selected app
             if let Some(release_list) = release_map.get(selected_app) {
                 // Grab the download info for the most recent version
-                // Send that in the Sender channel to the download handler thread
-                let download_data = release_list[0].get_download_info();
-
-                let _ = h_tx.try_send(HandlerMessage::Download(DownloadInfo {
+                let download_data = DownloadInfo {
                     selected_app: *selected_app,
-                    requested_downloads: vec![download_data],
-                }));
+                    requested_downloads: vec![(1, release_list[0].get_download_info())],
+                };
+
+                // Send that in the Sender channel to the download handler thread
+                let _ = h_tx.try_send(HandlerMessage::Download(download_data));
             }
         }
     }

@@ -1,4 +1,8 @@
 use std::collections::HashMap;
+use std::sync::{
+    atomic::{AtomicBool, AtomicUsize},
+    Arc,
+};
 
 use iced::executor;
 use iced::futures::channel::mpsc::Sender;
@@ -19,14 +23,19 @@ mod helpers;
 use crate::download::{DownloadThreadMessage, HandlerMessage};
 use crate::{download, utility};
 
-//use std::{cmp, path::PathBuf};
-
 #[derive(Debug)]
 pub struct Gui {
     selected_launcher: utility::AppInstallWrapper,
     launchers: Vec<utility::AppInstallWrapper>,
     release_data: Option<HashMap<utility::AppInstallWrapper, Vec<utility::ReleaseWrapper>>>,
+    download_status: DownloadStatus,
+}
+
+#[derive(Default, Debug)]
+pub struct DownloadStatus {
+    /// Channel to send messages to the download threads.
     download_handler_tx: Option<Sender<HandlerMessage>>,
+    download_trackers: Vec<(usize, (Arc<AtomicUsize>, Arc<AtomicBool>))>,
 }
 
 #[derive(Debug, Clone)]
@@ -56,14 +65,14 @@ impl Application for Gui {
                 // If there were any apps found,
                 // use the first one as the currently selected
                 selected_launcher: if installed_apps.len() > 0 {
-                    installed_apps[0].clone()
+                    installed_apps[0]
                 } else {
                     // If no installed apps were found, default to Steam
                     apps::AppInstallations::Steam.into()
                 },
                 launchers: installed_apps.clone(),
                 release_data: None,
-                download_handler_tx: None,
+                download_status: Default::default(),
             },
             Command::perform(
                 download::get_launcher_releases(installed_apps),
@@ -83,7 +92,7 @@ impl Application for Gui {
                 download::quick_update(
                     &self.selected_launcher,
                     &self.release_data,
-                    &mut self.download_handler_tx,
+                    &mut self.download_status.download_handler_tx,
                 );
             }
             Message::LauncherSelected(app) => {
@@ -106,7 +115,10 @@ impl Application for Gui {
             }
             Message::DownloadInfo(info) => match info {
                 DownloadThreadMessage::Ready(h_tx) => {
-                    self.download_handler_tx = Some(h_tx);
+                    self.download_status.download_handler_tx = Some(h_tx);
+                }
+                DownloadThreadMessage::Trackers(id, (progress, download_done)) => {
+                    self.download_status.download_trackers.push((id, (progress, download_done)));
                 }
             },
         };
@@ -126,12 +138,10 @@ impl Application for Gui {
         .width(Length::FillPortion(1))
         .padding(5)
         .into();
-
-        let list = Element::from(scrollable(
-            column(helpers::download_list(&self))
-                .padding(5),
-        ).width(Length::FillPortion(3)));
-
+        let list = Element::from(
+            scrollable(column(helpers::download_list(&self)).padding(5))
+                .width(Length::FillPortion(3)),
+        );
         let content = column(vec![
             container(
                 pick_list(
