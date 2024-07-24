@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 pub type ReleaseList = Vec<Release>;
 
 /// Contains the information from one of the releases on GitHub
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Release {
     /// API URL of the Release
     url: Option<String>,
@@ -16,6 +16,12 @@ pub struct Release {
     name: String,
     /// Asset list for each Release, usually the tar.gz/tar.xz file and a sha512sum file for integrity checking
     assets: Vec<Asset>,
+}
+
+impl PartialEq for Release {
+    fn eq(&self, other: &Self) -> bool {
+        self.tag_name == other.tag_name
+    }
 }
 
 impl std::fmt::Display for Release {
@@ -51,7 +57,7 @@ impl Release {
 /// Holds the information from the different Assets for each GitHub release
 ///
 /// An Asset could be for the wine tar folder or for the sha512sum
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Asset {
     /// API URL of the Asset
     url: String,

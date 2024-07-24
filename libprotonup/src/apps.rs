@@ -119,7 +119,7 @@ impl AppInstallations {
 
     /// Returns the default VariantGithubParameters for the AppInstallation
     pub fn get_github_parameters(&self) -> VariantGithubParameters {
-        self.into_app().app_wine_version().get_github_parameters()
+        self.as_app().app_wine_version().get_github_parameters()
     }
 }
 

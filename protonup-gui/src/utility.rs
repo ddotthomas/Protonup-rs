@@ -38,8 +38,9 @@ impl Display for AppInstallWrapper {
 }
 
 /// Wraps AppInstallations in a AppInstallWrapper Vec
-pub fn list_installed_apps() -> Vec<AppInstallWrapper> {
+pub async fn list_installed_apps() -> Vec<AppInstallWrapper> {
     libprotonup::apps::list_installed_apps()
+        .await
         .into_iter()
         .map(|app| app.into())
         .collect()

@@ -166,7 +166,11 @@ pub async fn hash_check_file<R: AsyncRead + Unpin + ?Sized>(
 
     let (git_hash, _) = git_hash.rsplit_once(' ').unwrap_or((git_hash, ""));
 
-    if hex::encode(hash) != git_hash.trim() {
+    let file_hash = hex::encode(hash);
+
+    // if hex::encode(hash) != git_hash.trim() {
+    if file_hash != git_hash.trim() {
+        println!("File's hash didn't match github hash. File: {} - Git Hash: {}", file_hash, git_hash.trim());
         return Ok(false);
     }
     Ok(true)
